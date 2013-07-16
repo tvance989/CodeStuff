@@ -4,8 +4,8 @@ from pygame.locals import *
 pygame.init()
 SCREEN_WIDTH = 640
 SCREEN_HEIGHT = 480
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-screen.fill((0,0,0))
+SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+SCREEN.fill((0,0,0))
 pygame.display.set_caption("PurdyPong")
 clock = pygame.time.Clock()
 
@@ -24,9 +24,10 @@ class Size:
     self.height = h
 
 class Velocity:
-  def __init__(self, s):
+  def __init__(self, s, x, y):
     self.speed = s
-    self.direction = None
+    self.dirX = x
+    self.dirY = y
 
 class Controllable:
   def __init__(self):
@@ -48,7 +49,7 @@ class Player:
   def __init__(self):
     self.size = Size(10,40)
     self.position = Position(20, (SCREEN_HEIGHT/2 - self.size.height/2))
-    self.velocity = Velocity(10)
+    self.velocity = Velocity(10, None, None)
     self.controllable = Controllable()
     self.renderable = Renderable()
 
@@ -56,19 +57,36 @@ class Computer:
   def __init__(self):
     self.size = Size(10,40)
     self.position = Position((SCREEN_WIDTH - 20 - self.size.width), (SCREEN_HEIGHT/2 - self.size.height/2))
-    self.velocity = Velocity(10)
+    self.velocity = Velocity(10, None, None)
     self.renderable = Renderable()
 
 class Ball:
   def __init__(self):
     self.size = Size(10,10)
     self.position = Position((SCREEN_WIDTH/2 - self.size.width/2), (SCREEN_HEIGHT/2 - self.size.height/2))
+    self.velocity = Velocity(10, -1, -1)
+    self.renderable = Renderable()
+
+
+
+""" SYSTEMS """
+
+class RenderSystem:
+  def __init__(self):
+    self.entities = []
+  def addRenderable(self, e):
+    self.entities.append(e)
+  def process(self):
+    for e in self.entities:
+      surf = Surface((e.size.width, e.size.height))
+      surf.fill((255,255,255))
+      pygame.Surface.blit(surf, SCREEN, (e.position.x, e.position.y, e.size.width, e.size.height))
 
 
 
 def main():
   running = True
-  while running:
+	while running:
 		for event in pygame.event.get():
 			if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
 				running = False
