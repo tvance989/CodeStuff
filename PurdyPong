@@ -86,15 +86,15 @@ class RenderSystem:
 
 def main():
   running = True
-	while running:
-		for event in pygame.event.get():
-			if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-				running = False
-		
-		pygame.display.update()
-		clock.tick(30)
-	
-	pygame.quit()
-	sys.exit()
+  while running:
+    for event in pygame.event.get():
+      if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+        running = False
+
+    pygame.display.update()
+    clock.tick(30)
+    
+  pygame.quit()
+  sys.exit()
 
 if __name__ == "__main__": main()
