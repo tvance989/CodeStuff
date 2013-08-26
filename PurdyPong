@@ -29,13 +29,28 @@ class Velocity:
     self.dirX = x
     self.dirY = y
 
-class Controllable:
+class Controller:
   def __init__(self):
+    self.isControllable = True
+
+class Sound:
+  def __init__(self, file):
+#    self.sound = pygame.getsoundfile(...)
     pass
 
+
+
+""" NODES """
+
+class Moveable:
+  def __init__(self, pos, vel):
+    self.position = pos
+    self.velocity = vel
+
 class Renderable:
-  def __init__(self):
-    pass
+  def __init__(self, pos, size):
+    self.position = pos
+    self.size = size
 
 class Audible:
   def __init__(self):
@@ -47,53 +62,135 @@ class Audible:
 
 class Player:
   def __init__(self):
-    self.size = Size(10,40)
+    self.size = Size(20,80)
     self.position = Position(20, (SCREEN_HEIGHT/2 - self.size.height/2))
-    self.velocity = Velocity(10, None, None)
-    self.controllable = Controllable()
-    self.renderable = Renderable()
+    self.velocity = Velocity(20, 0, 0)
 
 class Computer:
   def __init__(self):
-    self.size = Size(10,40)
+    self.size = Size(20,80)
     self.position = Position((SCREEN_WIDTH - 20 - self.size.width), (SCREEN_HEIGHT/2 - self.size.height/2))
-    self.velocity = Velocity(10, None, None)
-    self.renderable = Renderable()
+    self.velocity = Velocity(20, 0, 0)
 
 class Ball:
   def __init__(self):
-    self.size = Size(10,10)
+    self.size = Size(20,20)
     self.position = Position((SCREEN_WIDTH/2 - self.size.width/2), (SCREEN_HEIGHT/2 - self.size.height/2))
-    self.velocity = Velocity(10, -1, -1)
-    self.renderable = Renderable()
+    self.velocity = Velocity(5, -1, -1)
 
 
 
 """ SYSTEMS """
 
-class RenderSystem:
-  def __init__(self):
-    self.entities = []
-  def addRenderable(self, e):
-    self.entities.append(e)
+class InputSystem:
+  def __init__(self, player):
+    self.player = player
+  def process(self, key):
+    if key == K_UP:
+      self.player.velocity.dirY = -1
+    elif key == K_DOWN:
+      self.player.velocity.dirY = 1
+    else:
+      self.player.velocity.dirY = 0
+
+class BallCollisionSystem:
+  def __init__(self, ball, paddles):
+    self.ball = ball
+    self.paddles = paddles
   def process(self):
-    for e in self.entities:
-      surf = Surface((e.size.width, e.size.height))
+    ballRect = Rect(self.ball.position.x, self.ball.position.y, self.ball.size.width, self.ball.size.height)
+    # if collide with top or bottom wall
+    if self.ball.position.y <= 0 or (self.ball.position.y + self.ball.size.height) >= SCREEN_HEIGHT:
+      self.ball.velocity.dirY *= -1
+    # if collide with paddle
+    for p in self.paddles:
+      paddleRect = Rect(p.position.x, p.position.y, p.size.width, p.size.height)
+      if paddleRect.colliderect(ballRect):
+        self.ball.velocity.dirX *= -1
+
+class PaddleCollisionSystem:
+  def __init__(self, paddles):
+    self.paddles = paddles
+  def process(self):
+    for p in self.paddles:
+      if p.position.y <= 0:
+        p.position.y = 0
+      if (p.position.y + p.size.height) >= SCREEN_HEIGHT:
+        p.position.y = SCREEN_HEIGHT - p.size.height
+    
+class ScoreSystem:
+  def __init__(self, ball):
+    self.playerScore = 0
+    self.computerScore = 0
+    self.ball = ball
+  def process(self):
+    # if collide with top or bottom wall
+    if self.ball.position.x <= 0 or (self.ball.position.x + self.ball.size.width) >= SCREEN_WIDTH:
+      self.ball.position.x = SCREEN_WIDTH/2 - self.ball.size.width/2
+      self.ball.position.y = SCREEN_HEIGHT/2 - self.ball.size.height/2
+
+class MovementSystem:
+  def __init__(self, nodes):
+    self.nodes = nodes
+  def process(self):
+    for n in self.nodes:
+      n.position.x += n.velocity.dirX * n.velocity.speed
+      n.position.y += n.velocity.dirY * n.velocity.speed
+
+class RenderSystem:
+  def __init__(self, nodes):
+    self.nodes = nodes
+  def process(self):
+    SCREEN.fill((0,0,0))
+    for n in self.nodes:
+      surf = pygame.Surface((n.size.width, n.size.height))
       surf.fill((255,255,255))
-      pygame.Surface.blit(surf, SCREEN, (e.position.x, e.position.y, e.size.width, e.size.height))
+      #pygame.Surface.blit(surf, SCREEN, (n.position.x, n.position.y, n.size.width, n.size.height))
+      pygame.draw.rect(SCREEN, (255,255,255), (n.position.x, n.position.y, n.size.width, n.size.height))
+
+
+
+class NodeManager:
+  def __init__(self, entities):
+    self.moveables = []
+    self.renderables = []
+    for e in entities:
+      if e.position and e.velocity:
+        self.moveables.append(e)
+      if e.position and e.size:
+        self.renderables.append(e)
 
 
 
 def main():
+  player = Player()
+  computer = Computer()
+  ball = Ball()
+  nm = NodeManager([player, computer, ball])
+  inputSystem = InputSystem(player)
+  ballCollisionSystem = BallCollisionSystem(ball, (player, computer))
+  paddleCollisionSystem = PaddleCollisionSystem((player, computer))
+  scoreSystem = ScoreSystem(ball)
+  movementSystem = MovementSystem(nm.moveables)
+  renderSystem = RenderSystem(nm.renderables)
+  
   running = True
   while running:
     for event in pygame.event.get():
       if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
         running = False
-
+      elif event.type == KEYDOWN:
+        inputSystem.process(event.key)
+      elif event.type == KEYUP:
+        player.velocity.dirY = 0
+    ballCollisionSystem.process()
+    paddleCollisionSystem.process()
+    scoreSystem.process()
+    movementSystem.process()
+    renderSystem.process()
     pygame.display.update()
     clock.tick(30)
-    
+
   pygame.quit()
   sys.exit()
 
