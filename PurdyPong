@@ -148,6 +148,7 @@ class RenderSystem:
       #pygame.Surface.blit(surf, SCREEN, (n.position.x, n.position.y, n.size.width, n.size.height))
       pygame.draw.rect(SCREEN, (255,255,255), (n.position.x, n.position.y, n.size.width, n.size.height))
 
+'''
 class AISystem:
   def __init__(self, ball, computer):
     self.computer = computer
@@ -162,6 +163,18 @@ class AISystem:
         self.computer.velocity.dirY = 0
     else:
       self.computer.position.y = self.ball.position.y
+      
+'''
+class AISystem:
+  def __init__(self, ball, computer):
+    self.ball = ball
+    self.paddle = computer
+  def process(self):
+    if self.ball.position.x > (SCREEN_WIDTH / 2):
+      if (self.ball.position.y + self.ball.size.height / 2) < (self.paddle.position.y + self.paddle.size.height / 2):
+        self.paddle.velocity.dirY = -1
+      else:
+        self.paddle.velocity.dirY = 1
         
 
 
