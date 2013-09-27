@@ -111,6 +111,22 @@ class BallCollisionSystem:
 
 class AISystem:
   def __init__(self, ball, computer):
+    self.computer = computer
+    self.ball = ball
+  def process(self):
+    if self.ball.velocity.dirX < 0:
+      if self.computer.position.y > (SCREEN_HEIGHT / 2):
+        self.computer.velocity.dirY = -1
+      elif self.computer.position.y / 2 < (SCREEN_HEIGHT / 2):
+        self.computer.velocity.dirY = 1
+      else:
+        self.computer.velocity.dirY = 0
+    else:
+      self.computer.position.y = self.ball.position.y
+
+'''
+class AISystem:
+  def __init__(self, ball, computer):
     self.ball = ball
     self.paddle = computer
   def process(self):
@@ -119,6 +135,7 @@ class AISystem:
         self.paddle.velocity.dirY = -1
       else:
         self.paddle.velocity.dirY = 1
+'''
 
 class PaddleCollisionSystem:
   """ For preventing the paddles from moving off-screen high or low. """
