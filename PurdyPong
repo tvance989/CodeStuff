@@ -70,13 +70,13 @@ class Computer:
   def __init__(self):
     self.size = Size(20,80)
     self.position = Position((SCREEN_WIDTH - 20 - self.size.width), (SCREEN_HEIGHT/2 - self.size.height/2))
-    self.velocity = Velocity(20, 0, 0)
+    self.velocity = Velocity(5, 0, 0)
 
 class Ball:
   def __init__(self):
     self.size = Size(20,20)
     self.position = Position((SCREEN_WIDTH/2 - self.size.width/2), (SCREEN_HEIGHT/2 - self.size.height/2))
-    self.velocity = Velocity(5, -1, -1)
+    self.velocity = Velocity(10, -1, -1)
 
 
 
@@ -94,6 +94,7 @@ class InputSystem:
       self.player.velocity.dirY = 0
 
 class BallCollisionSystem:
+  """ For reversing ball direction if it hits a wall or paddle. """
   def __init__(self, ball, paddles):
     self.ball = ball
     self.paddles = paddles
@@ -108,7 +109,19 @@ class BallCollisionSystem:
       if paddleRect.colliderect(ballRect):
         self.ball.velocity.dirX *= -1
 
+class AISystem:
+  def __init__(self, ball, computer):
+    self.ball = ball
+    self.paddle = computer
+  def process(self):
+    if self.ball.position.x > (SCREEN_WIDTH / 2):
+      if (self.ball.position.y + self.ball.size.height / 2) < (self.paddle.position.y + self.paddle.size.height / 2):
+        self.paddle.velocity.dirY = -1
+      else:
+        self.paddle.velocity.dirY = 1
+
 class PaddleCollisionSystem:
+  """ For preventing the paddles from moving off-screen high or low. """
   def __init__(self, paddles):
     self.paddles = paddles
   def process(self):
@@ -148,35 +161,6 @@ class RenderSystem:
       #pygame.Surface.blit(surf, SCREEN, (n.position.x, n.position.y, n.size.width, n.size.height))
       pygame.draw.rect(SCREEN, (255,255,255), (n.position.x, n.position.y, n.size.width, n.size.height))
 
-'''
-class AISystem:
-  def __init__(self, ball, computer):
-    self.computer = computer
-    self.ball = ball
-  def process(self):
-    if self.ball.velocity.dirX < 0:
-      if self.computer.position.y > (SCREEN_HEIGHT / 2):
-        self.computer.velocity.dirY = -1
-      elif self.computer.position.y / 2 < (SCREEN_HEIGHT / 2):
-        self.computer.velocity.dirY = 1
-      else:
-        self.computer.velocity.dirY = 0
-    else:
-      self.computer.position.y = self.ball.position.y
-      
-'''
-class AISystem:
-  def __init__(self, ball, computer):
-    self.ball = ball
-    self.paddle = computer
-  def process(self):
-    if self.ball.position.x > (SCREEN_WIDTH / 2):
-      if (self.ball.position.y + self.ball.size.height / 2) < (self.paddle.position.y + self.paddle.size.height / 2):
-        self.paddle.velocity.dirY = -1
-      else:
-        self.paddle.velocity.dirY = 1
-        
-
 
 
 class NodeManager:
@@ -198,11 +182,11 @@ def main():
   nm = NodeManager([player, computer, ball])
   inputSystem = InputSystem(player)
   ballCollisionSystem = BallCollisionSystem(ball, (player, computer))
+  aiSystem = AISystem(ball, computer)
   paddleCollisionSystem = PaddleCollisionSystem((player, computer))
   scoreSystem = ScoreSystem(ball)
   movementSystem = MovementSystem(nm.moveables)
   renderSystem = RenderSystem(nm.renderables)
-  aiSystem = AISystem(ball, computer)
   
   running = True
   while running:
@@ -214,11 +198,11 @@ def main():
       elif event.type == KEYUP:
         player.velocity.dirY = 0
     ballCollisionSystem.process()
+    aiSystem.process()
     paddleCollisionSystem.process()
     scoreSystem.process()
     movementSystem.process()
     renderSystem.process()
-    aiSystem.process()
     pygame.display.update()
     clock.tick(30)
 
